@@ -150,14 +150,12 @@ enum class DirectionType
     kLeft,
     kRight,
 };
-
 class Game;
 
-struct ISnakeController {
+struct ISnakeController {//interface for snake controller
     virtual DirectionType NextDirection(const Game& game, size_t id) = 0;
     virtual ~ISnakeController() = default;
 };
-
 
 class Game {
 public:
@@ -169,28 +167,27 @@ public:
 
     Game(size_t number_of_rows, size_t number_of_cols, size_t timeLimit);
 
-    void RunUntilTheEnd() {
+    void RunUntilTheEnd() {//如果遊戲還沒結束就繼續執行Step
         while (!IsOver()) Step();
     }
 
-    void AddFood(const Food& food) {
+    void AddFood(const Food& food) {//新增食物
         foods_.push_back(food);
     }
 
-    void AddSnake(size_t id, const Position& pos, float dir, size_t len) {
+    void AddSnake(size_t id, const Position& pos, float dir, size_t len) {//新增蛇
         snakes_[id] = Snake(id, pos, dir, len);
     }
 
     void AddController(size_t id, const std::shared_ptr<ISnakeController>& controller) {
-        controllers[id] = controller;
+        controllers[id] = controller;//connected controller and snakes
     }
 
     void Step();
 
     [[nodiscard]] const Position& Center() const {
-        return snakes_.at(1).Head();
+        return snakes_.at(1).Head();//return ID is 1's snake's head
     }
-
 
     template<typename UnaryFunction> void TraverseFoods(UnaryFunction f) const;
     template<typename UnaryFunction> void TraverseSnakes(UnaryFunction f) const;
@@ -201,26 +198,27 @@ public:
     [[nodiscard]] size_t NumberOfCols() const;
     [[nodiscard]] size_t NumberOfRows() const;
 
-    [[nodiscard]] size_t FieldWidth() const { // 遊戲頁面寬度
+    [[nodiscard]] size_t FieldWidth() const {//像素橫向(cols)數量*像素寬度
         return NumberOfCols() * kCellSize;
     }
 
-    [[nodiscard]] size_t FieldHeight() const { // 遊戲頁面高度
+    [[nodiscard]] size_t FieldHeight() const {
         return NumberOfRows() * kCellSize;
     }
 
-    [[nodiscard]] bool IsOver() const;
+    [[nodiscard]] bool IsOver() const;//遊戲是否結束
 
-    [[nodiscard]] int Scores() const;
+    [[nodiscard]] int Scores() const;//回傳分數
 
-    [[nodiscard]] size_t Time() const;
+    [[nodiscard]] size_t Time() const;//time = ticks = 總共steps
 
-    static bool IsCollidedWithCircle(
-            const Position &center_a, int radius_a,
-            const Position &center_b, int radius_b);
-    static bool IsCollidedWithRectangle(
-            const Position &position, int radius,
-            Position topLeft, Position bottomRight);
+    static bool IsCollidedWithCircle(//check if snake collides with circle 
+        const Position& center_a, int radius_a,
+        const Position& center_b, int radius_b);
+
+    static bool IsCollidedWithRectangle(//check if snake collides with rectangle
+        const Position& position, int radius,
+        Position topLeft, Position bottomRight);
 
 private:
     std::map<size_t, Snake> snakes_;
@@ -230,8 +228,8 @@ private:
 
     size_t number_of_rows_;
     size_t number_of_cols_;
-    size_t timeLimit_; 
-    size_t ticks_; // 已過時間
+    size_t timeLimit_;
+    size_t ticks_;
 };
 
 template<typename Func>
@@ -240,6 +238,7 @@ void Game::TraverseFoods(Func f) const {
         f(food);
     }
 }
+//???
 template<typename Func>
 void Game::TraverseSnakes(Func f) const {
     for (auto it = snakes_.begin(); it != snakes_.end(); ++it) {
@@ -249,10 +248,10 @@ void Game::TraverseSnakes(Func f) const {
 
 
 Game::Game(size_t number_of_rows, size_t number_of_cols, size_t timeLimit) :
-        number_of_rows_{number_of_rows},
-        number_of_cols_{number_of_cols},
-        timeLimit_{timeLimit},
-        ticks_{0} {}
+    number_of_rows_{ number_of_rows },
+    number_of_cols_{ number_of_cols },
+    timeLimit_{ timeLimit },
+    ticks_{ 0 } {}
 
 void Game::Step() {
     if (is_game_over_) return;
@@ -270,19 +269,19 @@ void Game::Step() {
         Snake& snake = it->second;
         if (controllers.count(id)) {
             switch (controllers[id]->NextDirection(*this, id)) {
-                case DirectionType::kLeft:
-                    snake.StepLeft();
-                    break;
-                case DirectionType::kRight:
-                    snake.StepRight();
-                    break;
-                case DirectionType::kForward:
-                    snake.StepForward();
-                    break;
+            case DirectionType::kLeft:
+                snake.StepLeft();
+                break;
+            case DirectionType::kRight:
+                snake.StepRight();
+                break;
+            case DirectionType::kForward:
+                snake.StepForward();
+                break;
             }
         }
     }
-    
+
     // Dead
     std::unordered_set<size_t> dead_ids;
     for (auto it1 = snakes_.begin(); it1 != snakes_.end(); ++it1) {
@@ -292,15 +291,16 @@ void Game::Step() {
 
         // Snake to Field
         if (IsCollidedWithRectangle(
-                snake1.Head(), Game::kSnakeRadius,
-                Position{0, 0},
-                Position{
-                        static_cast<float>(FieldWidth()),
-                        static_cast<float>(FieldHeight())}
-        )) {
+            snake1.Head(), Game::kSnakeRadius,
+            Position{ 0, 0 },
+            Position{
+                    static_cast<float>(FieldWidth()),
+                    static_cast<float>(FieldHeight()) }
+                    )) {
             dead_ids.insert(id1);
             break;
         }
+
         for (auto it2 = snakes_.begin(); it2 != snakes_.end(); ++it2) {
             const size_t id2 = it2->first;
             const auto& snake2 = it2->second;
@@ -309,7 +309,7 @@ void Game::Step() {
 
             // Snake to Snake
             if (IsCollidedWithCircle(snake1.Head(), Game::kSnakeRadius,
-                                     snake2.Head(), Game::kSnakeRadius)) {
+                snake2.Head(), Game::kSnakeRadius)) {
                 const Position distance = snake2.Head() - snake1.Head();
                 const float innerProduct = distance.InnerProduct(forward);
                 if (innerProduct > 0) {
@@ -319,7 +319,7 @@ void Game::Step() {
             }
             for (const Position& pos : snake2.Body()) {
                 if (IsCollidedWithCircle(snake1.Head(), Game::kSnakeRadius,
-                                         pos, Game::kSnakeRadius)) {
+                    pos, Game::kSnakeRadius)) {
                     dead_ids.insert(id1);
                     break;
                 }
@@ -332,18 +332,20 @@ void Game::Step() {
             is_game_over_ = true;
             return;
         }
+
         std::map<size_t, Snake> newSnakes;
         for (auto it = snakes_.begin(); it != snakes_.end(); ++it) {
             const size_t id = it->first;
             Snake& snake = it->second;
             if (dead_ids.find(id) == dead_ids.end()) {
                 newSnakes[id] = std::move(snake);
-            } else {
+            }
+            else {
                 const int kPeriod = 20;
                 int currIndex = 0;
                 for (const auto& p : snake.Body()) {
                     if (currIndex % kPeriod == 0) {
-                        foods_.push_back({p, kMaxLeftTime});
+                        foods_.push_back({ p, kMaxLeftTime });
                     }
                     currIndex++;
                 }
@@ -351,7 +353,7 @@ void Game::Step() {
         }
         snakes_ = std::move(newSnakes);
     }
-    
+
     // Eat
     std::vector<Food> new_foods;
     for (auto& food : foods_) {
@@ -359,8 +361,8 @@ void Game::Step() {
         for (auto it = snakes_.begin(); it != snakes_.end(); ++it) {
             Snake& snake = it->second;
             if (IsCollidedWithCircle(
-                    snake.Head(), Game::kSnakeRadius,
-                    food.position, Game::kFoodRadius)) {
+                snake.Head(), Game::kSnakeRadius,
+                food.position, Game::kFoodRadius)) {
                 snake.AddScores(1);
                 is_eaten = true;
                 break;
@@ -375,11 +377,12 @@ void Game::Step() {
     }
     std::swap(new_foods, foods_);
 }
+
 bool Game::IsCollidedWithCircle(
-        const Position& center_a,
-        int radius_a,
-        const Position &center_b,
-        int radius_b) {
+    const Position& center_a,
+    int radius_a,
+    const Position& center_b,
+    int radius_b) {
     return ((center_a - center_b).Length() < static_cast<float>(radius_a + radius_b));
 }
 
@@ -396,13 +399,13 @@ bool Game::IsOver() const {
 }
 
 bool Game::IsCollidedWithRectangle(
-        const Position &position, const int radius,
-        Position topLeft, Position bottomRight) {
+    const Position& position, const int radius,
+    Position topLeft, Position bottomRight) {
     auto fRadius = static_cast<float>(radius);
     return
         position.x - fRadius < topLeft.x ||
         position.x + fRadius > bottomRight.x ||
-        position.y - fRadius < topLeft.y  ||
+        position.y - fRadius < topLeft.y ||
         position.y + fRadius > bottomRight.y;
 }
 
