@@ -8,48 +8,65 @@
 #include <functional>
 #include <iostream>
 
-struct Position{
-    [[nodiscard]] float Length() const {
-        return std::sqrt(x*x+y*y);
+struct Position
+{
+    [[nodiscard]] float Length() const
+    {
+        // 距離原點長度
+        return std::sqrt(x * x + y * y);
     }
 
-    [[nodiscard]] float InnerProduct(Position position) const {
-        return x * position.x + y* position.y;
+    [[nodiscard]] float InnerProduct(Position position) const
+    {
+        // 內積
+        return x * position.x + y * position.y;
     }
 
+    // 座標 x, y
     float x, y;
 };
 
-Position operator+(const Position& lhs, const Position& rhs) {
-    return {lhs.x + rhs.x, lhs.y + rhs.y };
+Position operator+(const Position &lhs, const Position &rhs)
+{
+    // 座標相加
+    return {lhs.x + rhs.x, lhs.y + rhs.y};
 }
 
-Position operator-(const Position& lhs, const Position& rhs) {
-    return {lhs.x - rhs.x, lhs.y - rhs.y };
+Position operator-(const Position &lhs, const Position &rhs)
+{
+    // 座標前面減去後面
+    return {lhs.x - rhs.x, lhs.y - rhs.y};
 }
 
-struct Food {
+struct Food
+{
+    // 座標
     Position position;
+    // 剩下的時間
     int leftTime;
 };
 
-class Snake {
+class Snake
+{
 public:
+    // 蛇蛇的單位大小
     static const int kSegmentSize = 20;
 
     Snake() = default;
-    Snake(size_t id, const Position& pos, float dir, size_t len);
+    // 傳入值：蛇蛇編號、蛇蛇位置、蛇蛇方向、蛇蛇長度
+    Snake(size_t id, const Position &pos, float dir, size_t len);
 
     void StepForward();
     void StepLeft();
     void StepRight();
 
+    // 回傳數字型態方向
     [[nodiscard]] float Direction() const { return direction_; }
-
-    [[nodiscard]] const Position& Head() const { return body_.back(); } // body_[0]尾巴、body_[body_size]頭
-
-    [[nodiscard]] const std::list<Position>& Body() const { return body_; }
-
+    // 頭是在 body.back() 的位置
+    [[nodiscard]] const Position &Head() const { return body_.back(); }
+    // 回傳整個身體
+    [[nodiscard]] const std::list<Position> &Body() const { return body_; }
+    // 傳入分數加分
     void AddScores(int added);
 
     [[nodiscard]] Position Forward() const;
@@ -57,6 +74,7 @@ public:
     [[nodiscard]] size_t Id() const { return id_; }
 
     [[nodiscard]] int Scores() const { return scores_; }
+
 private:
     float direction_ = 0;
     std::list<Position> body_;
@@ -65,48 +83,69 @@ private:
     size_t id_ = 0;
 };
 
-Snake::Snake(size_t id, const Position& pos, float dir, size_t len) {
+Snake::Snake(size_t id, const Position &pos, float dir, size_t len)
+{
     length_ = len;
     id_ = id;
     direction_ = dir;
+    // 加一確保不是零
     int body_size = static_cast<int>(length_) * Snake::kSegmentSize + 1;
-    for (int i = body_size; i >= 0; --i) {
+    // 初始會在一個點，不管蛇的身體大小，然後移動後會越來越長
+    for (int i = body_size; i >= 0; --i)
+    {
         body_.push_back(pos);
     }
 }
 
-void Snake::StepLeft() {
+void Snake::StepLeft()
+{
+    // 數值減少：逆時針
     direction_--;
+    // 轉完向後要前進
     StepForward();
 }
 
-void Snake::StepForward() {
+void Snake::StepForward()
+{
+    // body_.back() + Forward() 是頭部的新座標 （一次移動兩單位長度）
     body_.push_back(body_.back() + Forward());
-    body_.pop_front(); 
+    // 蛇的尾巴去除
+    body_.pop_front();
 }
 
-void Snake::StepRight() {
+void Snake::StepRight()
+{
+    // 數值增加：順時針
     direction_++;
+    // 轉完向後要前進
     StepForward();
 }
 
-void Snake::AddScores(int added) {
+void Snake::AddScores(int added)
+{
+    // 加分，蛇蛇長度和得分一樣
     scores_ += added;
-    length_ = scores_; // 吃到幾個果實，身體就多長
+    length_ = scores_;
     size_t body_size = length_ * Snake::kSegmentSize + 1;
     Position tail = body_.front();
-    while (body_size > body_.size()) {
+    // 因分數增加的身體部分先全部加在尾巴位置
+    while (body_size > body_.size())
+    {
         body_.push_front(tail);
     }
 }
 
-Position Snake::Forward() const {
+Position Snake::Forward() const
+{
+    // 回傳移動向量，一次移動長度為 2
     return Position{
-            static_cast<float>(2. * std::cos(direction_ / 180.f * M_PI)),
-            static_cast<float>(2. * std::sin(direction_ / 180.f * M_PI))};
+        static_cast<float>(2. * std::cos(direction_ / 180.f * M_PI)),
+        static_cast<float>(2. * std::sin(direction_ / 180.f * M_PI))};
 }
 
-enum class DirectionType {
+enum class DirectionType
+{
+    // DirectionType::kForward 是一個物件
     kForward,
     kLeft,
     kRight,
