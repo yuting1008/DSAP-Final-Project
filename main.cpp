@@ -597,6 +597,36 @@ float StraightForwardController::FrontWallDistance(Position snakeHead, Direction
     
     return GetFrontCollisionDistance(snakeHead, Game::kSnakeRadius, dirSymbol, frontFieldCollisionPos, 0);
 }
+
+// [YOUR CODE WILL BE PLACED HERE]
+class CustomController : public ISnakeController
+{
+public:
+    DirectionType NextDirection(const Game &game, size_t id);
+    ~CustomController() = default;
+
+private:
+};
+
+DirectionType CustomController::NextDirection(const Game &game, size_t id)
+{
+    // 確認該場有沒有其他蛇
+
+    DirectionType whereToGo;
+
+    // 會不會撞到邊界
+
+    // 躲避其他蛇
+    for (auto it = game.Snakes().begin(); it != game.Snakes().end(); ++it)
+    {
+    }
+    // 找食物
+    for (auto it = game.Foods().begin(); it != game.Foods().end(); ++it)
+    {
+    }
+
+    return whereToGo;
+}
 // [YOUR CODE WILL BE PLACED HERE]
 
 Position CreateSafePosition(const Game& game, std::mt19937& rand, size_t margin) {
