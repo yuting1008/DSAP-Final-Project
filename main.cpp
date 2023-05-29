@@ -458,7 +458,7 @@ private:
     DirectionType _turnDirection;   // 旋轉後方向(Symbol)
     DirectionType _currentDirType;  // 目前方向(Symbol)
     float _final_angle;             // 最後方向(Angle)
-    DirectionSymbol _dirSymbol;
+    DirectionSymbol _dirSymbol;     // 旋轉前方向(Symbol)
     const float turn_radius =  3 * 180 / 3.1415926 + 30;
 
     DirectionSymbol AngleToSymbol(float);
@@ -511,9 +511,10 @@ DirectionType StraightForwardController::NextDirection(const Game& game, size_t 
     return _currentDirType;
 }
 
+// version1 還有多少距離會撞牆/撞蛇頭/撞蛇身（下一個最有可能發生的碰撞）
 float StraightForwardController::GetCollisionDistance(Position snakePos, DirectionSymbol dirSymbol, const Game& game, size_t id) {
     
-    // check front collision distance with field
+    // 在多少距離會撞牆
     float distance = FrontWallDistance(snakePos, dirSymbol, game.FieldWidth(), game.FieldHeight());
 
     // check front collision distance with other snakes
@@ -522,18 +523,34 @@ float StraightForwardController::GetCollisionDistance(Position snakePos, Directi
         const Snake& anotherSnake = it->second;
         if (anotherID == id) continue;
 
+        // 在多少距離會撞蛇
         float d = GetFrontCollisionDistance(snakePos, Game::kSnakeRadius * 2, dirSymbol, anotherSnake.Head(), Game::kSnakeRadius * 2);
-        
+
+        // 若有機會撞到另一隻蛇的頭
         if (d > 0) {
+
+            // 沒有撞牆可能時，distance（最後回傳值）更新成撞蛇距離
             if (distance < 0)    distance = d;
+
+            // 有撞牆可能時，distance（最後回傳值）更新成撞蛇距離與撞牆距離中較小者
             else {
                 distance = std::min(distance, d);
             }
         }
+
+        // 遍歷另一隻蛇的各個身體位置
         for (const Position& pos : anotherSnake.Body()) {
+
+            // 在多少距離會撞到該蛇的身體
             float d_body = GetFrontCollisionDistance(snakePos, Game::kSnakeRadius, dirSymbol, pos, Game::kSnakeRadius);
+
+            // 若有機會撞到其他蛇的身體時
             if (d_body > 0) {
+
+                // 沒有撞牆或撞蛇頭的可能時，distance（最後回傳值）更新成撞蛇身距離
                 if (distance < 0)    distance = d_body;
+
+                // 有撞牆或撞蛇頭可能時，distance（最後回傳值）更新成三者中最小者
                 else {
                     distance = std::min(distance, d_body);
                 }
@@ -553,35 +570,49 @@ StraightForwardController::DirectionSymbol StraightForwardController::AngleToSym
     dir %= 4;
     return static_cast<DirectionSymbol>(dir); // RIGHT, DOWN, LEFT, UP, NONE
 }
+
+// version2 還有多少距離會撞上目標
 float StraightForwardController::GetFrontCollisionDistance(Position snakePos, float snakeRadius, DirectionSymbol dirSymbol, Position target, float targetRadius) {
+    // 計算與目標物的x軸距離、y軸距離（圓心距離差 - 半徑距離差）
     float distanceX = abs(snakePos.x - target.x) - snakeRadius - targetRadius;
     float distanceY = abs(snakePos.y - target.y) - snakeRadius - targetRadius;
     
-    // if direction is Left/Right
+    // 若左轉或右轉時
     if (dirSymbol == DirectionSymbol::LEFT || dirSymbol == DirectionSymbol::RIGHT) {
-        if (distanceY > 0) { // if will not hit target y, return -1
+
+        // 在不同的y軸上，則不會相撞回傳-1
+        if (distanceY > 0) {
             return -1;
         }
+
+        // 在相同的y軸上，則有機會相撞，回傳再距離多少會相撞
         return distanceX;
     }
 
-    // if direction is Up/Down
+    // 若往上或下走時
     if (dirSymbol == DirectionSymbol::UP || dirSymbol == DirectionSymbol::DOWN) {
-        if (distanceX > 0) { // if will not hit target x, return -1
+
+        // 在不同的x軸上，則不會相撞回傳-1
+        if (distanceX > 0) {
             return -1;
         }
         
+        // 在相同的x軸上，則有機會相撞，回傳再距離多少會相撞
         return distanceY;
     }
 
     return -1;
 }
+
 float StraightForwardController::FrontWallDistance(Position snakeHead, DirectionSymbol dirSymbol, float rightWall, float downWall) {
     Position frontFieldCollisionPos{ 0, 0 };
     if (dirSymbol == DirectionSymbol::LEFT) {
         frontFieldCollisionPos.x = 0;
         frontFieldCollisionPos.y = snakeHead.y;
-    }
+    } // 以左轉為例，代回 GetFrontCollisionDistance 時
+      // distanceX = abs(snakePos.x) - snakeRadius; distanceY < 0
+      // 最後回傳 distanceX
+    
     else if (dirSymbol == DirectionSymbol::RIGHT) {
         frontFieldCollisionPos.x = rightWall;
         frontFieldCollisionPos.y = snakeHead.y;
@@ -595,19 +626,11 @@ float StraightForwardController::FrontWallDistance(Position snakeHead, Direction
         frontFieldCollisionPos.y = downWall;
     }
     
-    return GetFrontCollisionDistance(snakeHead, Game::kSnakeRadius, dirSymbol, frontFieldCollisionPos, 0);
+    // 回傳再多少距離會撞牆
+    return GetFrontCollisionDistance(snakeHead, Game::kSnakeRadius, dirSymbol, frontFieldCollisionPos, 0); // version2
 }
 
 // [YOUR CODE WILL BE PLACED HERE]
-class CustomController : public ISnakeController
-{
-public:
-    DirectionType NextDirection(const Game &game, size_t id);
-    ~CustomController() = default;
-
-private:
-};
-
 DirectionType CustomController::NextDirection(const Game &game, size_t id)
 {
     // 確認該場有沒有其他蛇
@@ -627,7 +650,6 @@ DirectionType CustomController::NextDirection(const Game &game, size_t id)
 
     return whereToGo;
 }
-// [YOUR CODE WILL BE PLACED HERE]
 
 Position CreateSafePosition(const Game& game, std::mt19937& rand, size_t margin) {
     const auto space = Game::kSnakeRadius * margin;
