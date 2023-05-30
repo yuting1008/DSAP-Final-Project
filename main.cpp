@@ -480,7 +480,7 @@ DirectionType StraightForwardController::NextDirection(const Game& game, size_t 
             return _currentDirType;
         }
 
-        // 若最後方向與目前方向相同，取得旋轉前方向(Symbol)
+        // 若 _final_angle = snake.Direction()，則旋轉完成，記錄此方向(Symbol)
         _dirSymbol = AngleToSymbol(snake.Direction());
     }
 
