@@ -511,7 +511,7 @@ DirectionType StraightForwardController::NextDirection(const Game& game, size_t 
     return _currentDirType;
 }
 
-// version1 還有多少距離會撞牆/撞蛇頭/撞蛇身（下一個最有可能發生的碰撞）
+// 還有多少距離會撞牆/撞蛇頭/撞蛇身（下一個最有可能發生的碰撞）
 float StraightForwardController::GetCollisionDistance(Position snakePos, DirectionSymbol dirSymbol, const Game& game, size_t id) {
     
     // 在多少距離會撞牆
@@ -571,7 +571,7 @@ StraightForwardController::DirectionSymbol StraightForwardController::AngleToSym
     return static_cast<DirectionSymbol>(dir); // RIGHT, DOWN, LEFT, UP, NONE
 }
 
-// version2 還有多少距離會撞上目標
+// 目前旋轉的方向上 還有多少距離會撞上目標
 float StraightForwardController::GetFrontCollisionDistance(Position snakePos, float snakeRadius, DirectionSymbol dirSymbol, Position target, float targetRadius) {
     // 計算與目標物的x軸距離、y軸距離（圓心距離差 - 半徑距離差）
     float distanceX = abs(snakePos.x - target.x) - snakeRadius - targetRadius;
@@ -627,7 +627,7 @@ float StraightForwardController::FrontWallDistance(Position snakeHead, Direction
     }
     
     // 回傳再多少距離會撞牆
-    return GetFrontCollisionDistance(snakeHead, Game::kSnakeRadius, dirSymbol, frontFieldCollisionPos, 0); // version2
+    return GetFrontCollisionDistance(snakeHead, Game::kSnakeRadius, dirSymbol, frontFieldCollisionPos, 0);
 }
 
 // [YOUR CODE WILL BE PLACED HERE]
