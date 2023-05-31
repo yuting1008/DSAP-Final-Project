@@ -150,14 +150,17 @@ enum class DirectionType
     kLeft,
     kRight,
 };
+
 class Game;
 
-struct ISnakeController {//interface for snake controller
-    virtual DirectionType NextDirection(const Game& game, size_t id) = 0;
+struct ISnakeController
+{
+    virtual DirectionType NextDirection(const Game &game, size_t id) = 0;
     virtual ~ISnakeController() = default;
 };
 
-class Game {
+class Game
+{
 public:
     static const int kFoodRadius = 5;
     static const int kSnakeRadius = 50;
@@ -167,57 +170,67 @@ public:
 
     Game(size_t number_of_rows, size_t number_of_cols, size_t timeLimit);
 
-    void RunUntilTheEnd() {//如果遊戲還沒結束就繼續執行Step
-        while (!IsOver()) Step();
+    void RunUntilTheEnd()
+    {
+        while (!IsOver())
+            Step();
     }
 
-    void AddFood(const Food& food) {//新增食物
+    void AddFood(const Food &food)
+    {
         foods_.push_back(food);
     }
 
-    void AddSnake(size_t id, const Position& pos, float dir, size_t len) {//新增蛇
+    void AddSnake(size_t id, const Position &pos, float dir, size_t len)
+    {
         snakes_[id] = Snake(id, pos, dir, len);
     }
 
-    void AddController(size_t id, const std::shared_ptr<ISnakeController>& controller) {
-        controllers[id] = controller;//connected controller and snakes
+    void AddController(size_t id, const std::shared_ptr<ISnakeController> &controller)
+    {
+        controllers[id] = controller;
     }
 
     void Step();
 
-    [[nodiscard]] const Position& Center() const {
-        return snakes_.at(1).Head();//return ID is 1's snake's head
+    [[nodiscard]] const Position &Center() const
+    {
+        return snakes_.at(1).Head();
     }
 
-    template<typename UnaryFunction> void TraverseFoods(UnaryFunction f) const;
-    template<typename UnaryFunction> void TraverseSnakes(UnaryFunction f) const;
+    template <typename UnaryFunction>
+    void TraverseFoods(UnaryFunction f) const;
+    template <typename UnaryFunction>
+    void TraverseSnakes(UnaryFunction f) const;
 
-    [[nodiscard]] const std::vector<Food>& Foods() const { return foods_; }
-    [[nodiscard]] const std::map<size_t, Snake>& Snakes() const { return snakes_; };
+    [[nodiscard]] const std::vector<Food> &Foods() const { return foods_; }
+    [[nodiscard]] const std::map<size_t, Snake> &Snakes() const { return snakes_; };
 
     [[nodiscard]] size_t NumberOfCols() const;
     [[nodiscard]] size_t NumberOfRows() const;
 
-    [[nodiscard]] size_t FieldWidth() const {//像素橫向(cols)數量*像素寬度
+    [[nodiscard]] size_t FieldWidth() const
+    {
         return NumberOfCols() * kCellSize;
     }
 
-    [[nodiscard]] size_t FieldHeight() const {
+    [[nodiscard]] size_t FieldHeight() const
+    {
         return NumberOfRows() * kCellSize;
     }
 
-    [[nodiscard]] bool IsOver() const;//遊戲是否結束
+    [[nodiscard]] bool IsOver() const;
 
-    [[nodiscard]] int Scores() const;//回傳分數
+    [[nodiscard]] int Scores() const;
 
-    [[nodiscard]] size_t Time() const;//time = ticks = 總共steps
+    [[nodiscard]] size_t Time() const;
 
-    static bool IsCollidedWithCircle(//check if snake collides with circle 
-        const Position& center_a, int radius_a,
-        const Position& center_b, int radius_b);
+    static bool IsCollidedWithCircle(
+        const Position &center_a, int radius_a,
+        const Position &center_b, int radius_b);
 
-    static bool IsCollidedWithRectangle(//check if snake collides with rectangle
-        const Position& position, int radius,
+    static bool IsCollidedWithRectangle(
+        const Position &position, int radius,
         Position topLeft, Position bottomRight);
 
 private:
@@ -232,43 +245,58 @@ private:
     size_t ticks_;
 };
 
-template<typename Func>
-void Game::TraverseFoods(Func f) const {
-    for (const auto& food : foods_) {
+// Func f 是可以傳入函數，像是如果有 void Print(T sth)
+// 就可以 void Game::TraverseFoods(Print) const
+template <typename Func>
+void Game::TraverseFoods(Func f) const
+{
+    for (const auto &food : foods_)
+    {
         f(food);
     }
 }
-//???
-template<typename Func>
-void Game::TraverseSnakes(Func f) const {
-    for (auto it = snakes_.begin(); it != snakes_.end(); ++it) {
+
+template <typename Func>
+void Game::TraverseSnakes(Func f) const
+{
+    for (auto it = snakes_.begin(); it != snakes_.end(); ++it)
+    {
         f(it->second);
     }
 }
 
+Game::Game(size_t number_of_rows, size_t number_of_cols, size_t timeLimit) : number_of_rows_{number_of_rows},
+                                                                             number_of_cols_{number_of_cols},
+                                                                             timeLimit_{timeLimit},
+                                                                             ticks_{0} {}
 
-Game::Game(size_t number_of_rows, size_t number_of_cols, size_t timeLimit) :
-    number_of_rows_{ number_of_rows },
-    number_of_cols_{ number_of_cols },
-    timeLimit_{ timeLimit },
-    ticks_{ 0 } {}
+void Game::Step()
+{
+    if (is_game_over_)
+    {
 
-void Game::Step() {
-    if (is_game_over_) return;
+        return;
+    }
+    // return;
 
     ++ticks_;
 
-    if (timeLimit_ <= ticks_) {
+    if (timeLimit_ <= ticks_)
+    {
         is_game_over_ = true;
         return;
     }
 
     // Move
-    for (auto it = snakes_.begin(); it != snakes_.end(); ++it) {
+    for (auto it = snakes_.begin(); it != snakes_.end(); ++it)
+    {
         size_t id = it->first;
-        Snake& snake = it->second;
-        if (controllers.count(id)) {
-            switch (controllers[id]->NextDirection(*this, id)) {
+        Snake &snake = it->second;
+        if (controllers.count(id))
+        {
+            // 經過我們 Controller 的判斷後，會回傳 DirectionType::kLeft、DirectionType::kRight、DirectionType::kForward
+            switch (controllers[id]->NextDirection(*this, id))
+            {
             case DirectionType::kLeft:
                 snake.StepLeft();
                 break;
@@ -284,42 +312,50 @@ void Game::Step() {
 
     // Dead
     std::unordered_set<size_t> dead_ids;
-    for (auto it1 = snakes_.begin(); it1 != snakes_.end(); ++it1) {
+    for (auto it1 = snakes_.begin(); it1 != snakes_.end(); ++it1)
+    {
         const size_t id1 = it1->first;
-        const auto& snake1 = it1->second;
-        const auto& forward = snake1.Forward();
+        const auto &snake1 = it1->second;
+        const auto &forward = snake1.Forward();
 
         // Snake to Field
         if (IsCollidedWithRectangle(
-            snake1.Head(), Game::kSnakeRadius,
-            Position{ 0, 0 },
-            Position{
+                snake1.Head(), Game::kSnakeRadius,
+                Position{0, 0},
+                Position{
                     static_cast<float>(FieldWidth()),
-                    static_cast<float>(FieldHeight()) }
-                    )) {
+                    static_cast<float>(FieldHeight())}))
+        {
             dead_ids.insert(id1);
             break;
         }
 
-        for (auto it2 = snakes_.begin(); it2 != snakes_.end(); ++it2) {
+        for (auto it2 = snakes_.begin(); it2 != snakes_.end(); ++it2)
+        {
             const size_t id2 = it2->first;
-            const auto& snake2 = it2->second;
+            const auto &snake2 = it2->second;
 
-            if (id1 == id2) continue;
+            if (id1 == id2)
+                continue;
 
             // Snake to Snake
             if (IsCollidedWithCircle(snake1.Head(), Game::kSnakeRadius,
-                snake2.Head(), Game::kSnakeRadius)) {
+                                     snake2.Head(), Game::kSnakeRadius))
+            {
                 const Position distance = snake2.Head() - snake1.Head();
                 const float innerProduct = distance.InnerProduct(forward);
-                if (innerProduct > 0) {
+                // 如果另一隻蛇的頭在現在這隻蛇的前進方向上，現在這隻蛇死掉
+                if (innerProduct > 0)
+                {
                     dead_ids.insert(id1);
                 }
                 break;
             }
-            for (const Position& pos : snake2.Body()) {
+            for (const Position &pos : snake2.Body())
+            {
                 if (IsCollidedWithCircle(snake1.Head(), Game::kSnakeRadius,
-                    pos, Game::kSnakeRadius)) {
+                                         pos, Game::kSnakeRadius))
+                {
                     dead_ids.insert(id1);
                     break;
                 }
@@ -327,314 +363,164 @@ void Game::Step() {
         }
     }
 
-    if (!dead_ids.empty()) {
-        if (dead_ids.find(1) != dead_ids.end()) {
+    if (!dead_ids.empty())
+    {
+        if (dead_ids.find(1) != dead_ids.end())
+        {
             is_game_over_ = true;
             return;
         }
 
         std::map<size_t, Snake> newSnakes;
-        for (auto it = snakes_.begin(); it != snakes_.end(); ++it) {
+        for (auto it = snakes_.begin(); it != snakes_.end(); ++it)
+        {
             const size_t id = it->first;
-            Snake& snake = it->second;
-            if (dead_ids.find(id) == dead_ids.end()) {
+            Snake &snake = it->second;
+            // 死掉的蛇移除
+            if (dead_ids.find(id) == dead_ids.end())
+            {
                 newSnakes[id] = std::move(snake);
             }
-            else {
+            else
+            {
+                // 死掉的蛇會變成養分，而且食物會永久留在場上直到遊戲結束
                 const int kPeriod = 20;
                 int currIndex = 0;
-                for (const auto& p : snake.Body()) {
-                    if (currIndex % kPeriod == 0) {
-                        foods_.push_back({ p, kMaxLeftTime });
+                for (const auto &p : snake.Body())
+                {
+                    if (currIndex % kPeriod == 0)
+                    {
+                        foods_.push_back({p, kMaxLeftTime});
                     }
                     currIndex++;
                 }
             }
         }
+        // 更新蛇的名單
         snakes_ = std::move(newSnakes);
     }
 
     // Eat
     std::vector<Food> new_foods;
-    for (auto& food : foods_) {
+    // 每個食物逐一檢查
+    for (auto &food : foods_)
+    {
         bool is_eaten = false;
-        for (auto it = snakes_.begin(); it != snakes_.end(); ++it) {
-            Snake& snake = it->second;
+        // 檢查每隻蛇有沒有吃到
+        for (auto it = snakes_.begin(); it != snakes_.end(); ++it)
+        {
+            Snake &snake = it->second;
             if (IsCollidedWithCircle(
-                snake.Head(), Game::kSnakeRadius,
-                food.position, Game::kFoodRadius)) {
+                    snake.Head(), Game::kSnakeRadius,
+                    food.position, Game::kFoodRadius))
+            {
                 snake.AddScores(1);
                 is_eaten = true;
                 break;
             }
         }
-        if (!is_eaten) {
+        if (!is_eaten)
+        {
             food.leftTime--;
-            if (food.leftTime > 0) {
+            if (food.leftTime > 0)
+            {
                 new_foods.push_back(food);
             }
         }
     }
+    // 更新食物名單
     std::swap(new_foods, foods_);
 }
 
 bool Game::IsCollidedWithCircle(
-    const Position& center_a,
+    const Position &center_a,
     int radius_a,
-    const Position& center_b,
-    int radius_b) {
+    const Position &center_b,
+    int radius_b)
+{
     return ((center_a - center_b).Length() < static_cast<float>(radius_a + radius_b));
 }
 
-size_t Game::NumberOfCols() const {
+size_t Game::NumberOfCols() const
+{
     return number_of_cols_;
 }
 
-size_t Game::NumberOfRows() const {
+size_t Game::NumberOfRows() const
+{
     return number_of_rows_;
 }
 
-bool Game::IsOver() const {
+bool Game::IsOver() const
+{
+    // std::cout << "bitch: " << timeLimit_ << ", " << ticks_ << std::endl;
     return is_game_over_;
 }
 
 bool Game::IsCollidedWithRectangle(
-    const Position& position, const int radius,
-    Position topLeft, Position bottomRight) {
+    const Position &position, const int radius,
+    Position topLeft, Position bottomRight)
+{
     auto fRadius = static_cast<float>(radius);
-    return
-        position.x - fRadius < topLeft.x ||
-        position.x + fRadius > bottomRight.x ||
-        position.y - fRadius < topLeft.y ||
-        position.y + fRadius > bottomRight.y;
+    return position.x - fRadius < topLeft.x ||
+           position.x + fRadius > bottomRight.x ||
+           position.y - fRadius < topLeft.y ||
+           position.y + fRadius > bottomRight.y;
 }
 
-int Game::Scores() const {
+int Game::Scores() const
+{
     return snakes_.at(1).Scores();
 }
 
-size_t Game::Time() const {
+size_t Game::Time() const
+{
     return ticks_;
 }
 
-// 朝同一個方向一直走
-class ConstantDirectionControllerA : public ISnakeController {
+// 和我們 PK 的A蛇的操作方式
+class ConstantDirectionControllerA : public ISnakeController
+{
 public:
     explicit ConstantDirectionControllerA(DirectionType type) : type_{type} {}
-    DirectionType NextDirection(const Game&, size_t) override {
+    DirectionType NextDirection(const Game &, size_t) override
+    {
         return type_;
     }
+
 private:
     DirectionType type_;
 };
 
-// 繞圈圈
-class ConstantDirectionControllerB : public ISnakeController {
+// 和我們 PK 的B蛇的操作方式：會一直往右前方
+class ConstantDirectionControllerB : public ISnakeController
+{
 public:
-    DirectionType NextDirection(const Game&, size_t id) override {
-		if (type_ == DirectionType::kForward) {
-			type_ = DirectionType::kRight;
-		} else {
-			type_ = DirectionType::kForward;
-		}
+    DirectionType NextDirection(const Game &, size_t id) override
+    {
+        if (type_ == DirectionType::kForward)
+        {
+            type_ = DirectionType::kRight;
+        }
+        else
+        {
+            type_ = DirectionType::kForward;
+        }
         return type_;
     }
+
 private:
     DirectionType type_ = DirectionType::kRight;
 };
 
-class StraightForwardController : public ISnakeController {
-public:
-    explicit StraightForwardController(float init_dir, DirectionType turnDirection) :
-        _final_angle { init_dir },
-        _turnDirection { turnDirection },
-        _currentDirType { DirectionType::kForward },
-        _dirSymbol { AngleToSymbol(_final_angle) } {} // 
-    DirectionType NextDirection(const Game&, size_t) override;
-private:
-    enum class DirectionSymbol {
-        RIGHT, DOWN, LEFT, UP, NONE
-    };
-    DirectionType _turnDirection;   // 旋轉後方向(Symbol)
-    DirectionType _currentDirType;  // 目前方向(Symbol)
-    float _final_angle;             // 最後方向(Angle)
-    DirectionSymbol _dirSymbol;     // 旋轉前方向(Symbol)
-    const float turn_radius =  3 * 180 / 3.1415926 + 30;
-
-    DirectionSymbol AngleToSymbol(float);
-    float GetCollisionDistance(Position, DirectionSymbol, const Game&, size_t);
-    float GetFrontCollisionDistance(Position, float, DirectionSymbol, Position, float);
-    float FrontWallDistance(Position, DirectionSymbol, float, float);
-};
-
-// 如果不會撞上就一直往前走，如果會撞上就左轉或右轉
-DirectionType StraightForwardController::NextDirection(const Game& game, size_t id) {
-    const auto& snake = game.Snakes().at(id); // 根據提供的 id 從遊戲中獲取相對應的蛇
-
-    // 若移動方向不是直線前進 
-    if (_currentDirType != DirectionType::kForward) { 
-        float remaining_angle = abs(_final_angle - snake.Direction()); 
-
-        // 若最後方向與目前方向不同，則持續旋轉
-        if (remaining_angle > 0) {
-            return _currentDirType;
-        }
-
-        // 若 _final_angle = snake.Direction()，則旋轉完成，記錄此方向(Symbol)
-        _dirSymbol = AngleToSymbol(snake.Direction());
-    }
-
-    float distance = GetCollisionDistance(snake.Head(), _dirSymbol, game, id);
-
-    // 若在下一步移動中會發生碰撞(if 0 < distance < min_distance)
-    if (distance > 0 && distance < turn_radius) {
-
-        // 更新目前方向成旋轉後方向(Symbol)
-        _currentDirType = _turnDirection;
-
-        // 若旋轉後方向是Right，代表下一步往右走會撞到，要更新成左轉(+180)
-        if (_currentDirType == DirectionType::kRight) {
-            _final_angle = snake.Direction() + 180;
-        }
-
-        // 若旋轉後方向是Left，代表下一步往左走會撞到，要更新成右轉(-180)
-        else {
-            _final_angle = snake.Direction() - 180;
-        }
-        
-    }
-
-    // 若沒有碰撞問題就一直直走
-    else {
-        _currentDirType = DirectionType::kForward;
-    }
-    return _currentDirType;
-}
-
-// 還有多少距離會撞牆/撞蛇頭/撞蛇身（下一個最有可能發生的碰撞）
-float StraightForwardController::GetCollisionDistance(Position snakePos, DirectionSymbol dirSymbol, const Game& game, size_t id) {
-    
-    // 在多少距離會撞牆
-    float distance = FrontWallDistance(snakePos, dirSymbol, game.FieldWidth(), game.FieldHeight());
-
-    // check front collision distance with other snakes
-    for (auto it = game.Snakes().begin(); it != game.Snakes().end(); ++it) {
-        const size_t anotherID = it->first;
-        const Snake& anotherSnake = it->second;
-        if (anotherID == id) continue;
-
-        // 在多少距離會撞蛇
-        float d = GetFrontCollisionDistance(snakePos, Game::kSnakeRadius * 2, dirSymbol, anotherSnake.Head(), Game::kSnakeRadius * 2);
-
-        // 若有機會撞到另一隻蛇的頭
-        if (d > 0) {
-
-            // 沒有撞牆可能時，distance（最後回傳值）更新成撞蛇距離
-            if (distance < 0)    distance = d;
-
-            // 有撞牆可能時，distance（最後回傳值）更新成撞蛇距離與撞牆距離中較小者
-            else {
-                distance = std::min(distance, d);
-            }
-        }
-
-        // 遍歷另一隻蛇的各個身體位置
-        for (const Position& pos : anotherSnake.Body()) {
-
-            // 在多少距離會撞到該蛇的身體
-            float d_body = GetFrontCollisionDistance(snakePos, Game::kSnakeRadius, dirSymbol, pos, Game::kSnakeRadius);
-
-            // 若有機會撞到其他蛇的身體時
-            if (d_body > 0) {
-
-                // 沒有撞牆或撞蛇頭的可能時，distance（最後回傳值）更新成撞蛇身距離
-                if (distance < 0)    distance = d_body;
-
-                // 有撞牆或撞蛇頭可能時，distance（最後回傳值）更新成三者中最小者
-                else {
-                    distance = std::min(distance, d_body);
-                }
-            }
-        }
-    }
-    return distance;
-}
-
-StraightForwardController::DirectionSymbol StraightForwardController::AngleToSymbol(float angle) {
-    // if angle is not a multiple of 90
-    if (int(angle) % 90 != 0) {
-        return DirectionSymbol::NONE;
-    }
-    // can be converted into 4 directions
-    int dir = abs(angle / 90);
-    dir %= 4;
-    return static_cast<DirectionSymbol>(dir); // RIGHT, DOWN, LEFT, UP, NONE
-}
-
-// 目前旋轉的方向上 還有多少距離會撞上目標
-float StraightForwardController::GetFrontCollisionDistance(Position snakePos, float snakeRadius, DirectionSymbol dirSymbol, Position target, float targetRadius) {
-    // 計算與目標物的x軸距離、y軸距離（圓心距離差 - 半徑距離差）
-    float distanceX = abs(snakePos.x - target.x) - snakeRadius - targetRadius;
-    float distanceY = abs(snakePos.y - target.y) - snakeRadius - targetRadius;
-    
-    // 若左轉或右轉時
-    if (dirSymbol == DirectionSymbol::LEFT || dirSymbol == DirectionSymbol::RIGHT) {
-
-        // 在不同的y軸上，則不會相撞回傳-1
-        if (distanceY > 0) {
-            return -1;
-        }
-
-        // 在相同的y軸上，則有機會相撞，回傳再距離多少會相撞
-        return distanceX;
-    }
-
-    // 若往上或下走時
-    if (dirSymbol == DirectionSymbol::UP || dirSymbol == DirectionSymbol::DOWN) {
-
-        // 在不同的x軸上，則不會相撞回傳-1
-        if (distanceX > 0) {
-            return -1;
-        }
-        
-        // 在相同的x軸上，則有機會相撞，回傳再距離多少會相撞
-        return distanceY;
-    }
-
-    return -1;
-}
-
-float StraightForwardController::FrontWallDistance(Position snakeHead, DirectionSymbol dirSymbol, float rightWall, float downWall) {
-    Position frontFieldCollisionPos{ 0, 0 };
-    if (dirSymbol == DirectionSymbol::LEFT) {
-        frontFieldCollisionPos.x = 0;
-        frontFieldCollisionPos.y = snakeHead.y;
-    } // 以左轉為例，代回 GetFrontCollisionDistance 時
-      // distanceX = abs(snakePos.x) - snakeRadius; distanceY < 0
-      // 最後回傳 distanceX
-    
-    else if (dirSymbol == DirectionSymbol::RIGHT) {
-        frontFieldCollisionPos.x = rightWall;
-        frontFieldCollisionPos.y = snakeHead.y;
-    }
-    else if (dirSymbol == DirectionSymbol::UP) {
-        frontFieldCollisionPos.x = snakeHead.x;
-        frontFieldCollisionPos.y = 0;
-    }
-    else if (dirSymbol == DirectionSymbol::DOWN) {
-        frontFieldCollisionPos.x = snakeHead.x;
-        frontFieldCollisionPos.y = downWall;
-    }
-    
-    // 回傳再多少距離會撞牆
-    return GetFrontCollisionDistance(snakeHead, Game::kSnakeRadius, dirSymbol, frontFieldCollisionPos, 0);
-}
-
-// [YOUR CODE WILL BE PLACED HERE]
-class CustomController : public ISnakeController
+// 和我們 PK 的其他蛇的操作方式
+class StraightForwardController : public ISnakeController
 {
 public:
-    explicit CustomController() : _final_angle{0}, _turnDirection{DirectionType::kRight}, _currentDirType{DirectionType::kForward}, _dirSymbol{AngleToSymbol(_final_angle)} {}
+    explicit StraightForwardController(float init_dir, DirectionType turnDirection) : _final_angle{init_dir},
+                                                                                      _turnDirection{turnDirection},
+                                                                                      _currentDirType{DirectionType::kForward},
+                                                                                      _dirSymbol{AngleToSymbol(_final_angle)} {}
     DirectionType NextDirection(const Game &, size_t) override;
 
 private:
@@ -658,7 +544,7 @@ private:
     float FrontWallDistance(Position, DirectionSymbol, float, float);
 };
 
-DirectionType CustomController::NextDirection(const Game &game, size_t id)
+DirectionType StraightForwardController::NextDirection(const Game &game, size_t id)
 {
     const auto &snake = game.Snakes().at(id);
     // if is turning around
@@ -688,6 +574,198 @@ DirectionType CustomController::NextDirection(const Game &game, size_t id)
         else
         {
             _final_angle = snake.Direction() - 180;
+        }
+    }
+    else
+    {
+        // no collision problem, just go straight forward
+        _currentDirType = DirectionType::kForward;
+    }
+
+    return _currentDirType;
+}
+
+float StraightForwardController::GetCollisionDistance(Position snakePos, DirectionSymbol dirSymbol, const Game &game, size_t id)
+{
+
+    // check front collision distance with field
+    float distance = FrontWallDistance(snakePos, dirSymbol, game.FieldWidth(), game.FieldHeight());
+
+    // check front collision distance with other snakes
+    for (auto it = game.Snakes().begin(); it != game.Snakes().end(); ++it)
+    {
+        const size_t anotherID = it->first;
+        const Snake &anotherSnake = it->second;
+        if (anotherID == id)
+            continue;
+
+        float d = GetFrontCollisionDistance(snakePos, Game::kSnakeRadius * 2, dirSymbol, anotherSnake.Head(), Game::kSnakeRadius * 2);
+
+        if (d > 0)
+        {
+            if (distance < 0)
+                distance = d;
+            else
+            {
+                distance = std::min(distance, d);
+            }
+        }
+
+        for (const Position &pos : anotherSnake.Body())
+        {
+            float d_body = GetFrontCollisionDistance(snakePos, Game::kSnakeRadius, dirSymbol, pos, Game::kSnakeRadius);
+            if (d_body > 0)
+            {
+                if (distance < 0)
+                    distance = d_body;
+                else
+                {
+                    distance = std::min(distance, d_body);
+                }
+            }
+        }
+    }
+    return distance;
+}
+
+StraightForwardController::DirectionSymbol StraightForwardController::AngleToSymbol(float angle)
+{
+    // if angle is not a multiple of 90
+    if (int(angle) % 90 != 0)
+    {
+        return DirectionSymbol::NONE;
+    }
+    // can be converted into 4 directions
+    int dir = abs(angle / 90);
+    dir %= 4;
+    return static_cast<DirectionSymbol>(dir);
+}
+
+float StraightForwardController::GetFrontCollisionDistance(Position snakePos, float snakeRadius, DirectionSymbol dirSymbol, Position target, float targetRadius)
+{
+    float distanceX = abs(snakePos.x - target.x) - snakeRadius - targetRadius;
+    float distanceY = abs(snakePos.y - target.y) - snakeRadius - targetRadius;
+
+    // if direction is Left/Right
+    if (dirSymbol == DirectionSymbol::LEFT || dirSymbol == DirectionSymbol::RIGHT)
+    {
+        if (distanceY > 0)
+        { // if will not hit target y, return -1
+            return -1;
+        }
+        return distanceX;
+    }
+
+    // if direction is Up/Down
+    if (dirSymbol == DirectionSymbol::UP || dirSymbol == DirectionSymbol::DOWN)
+    {
+        if (distanceX > 0)
+        { // if will not hit target x, return -1
+            return -1;
+        }
+
+        return distanceY;
+    }
+
+    return -1;
+}
+
+float StraightForwardController::FrontWallDistance(Position snakeHead, DirectionSymbol dirSymbol, float rightWall, float downWall)
+{
+    Position frontFieldCollisionPos{0, 0};
+    if (dirSymbol == DirectionSymbol::LEFT)
+    {
+        frontFieldCollisionPos.x = 0;
+        frontFieldCollisionPos.y = snakeHead.y;
+    }
+    else if (dirSymbol == DirectionSymbol::RIGHT)
+    {
+        frontFieldCollisionPos.x = rightWall;
+        frontFieldCollisionPos.y = snakeHead.y;
+    }
+    else if (dirSymbol == DirectionSymbol::UP)
+    {
+        frontFieldCollisionPos.x = snakeHead.x;
+        frontFieldCollisionPos.y = 0;
+    }
+    else if (dirSymbol == DirectionSymbol::DOWN)
+    {
+        frontFieldCollisionPos.x = snakeHead.x;
+        frontFieldCollisionPos.y = downWall;
+    }
+
+    return GetFrontCollisionDistance(snakeHead, Game::kSnakeRadius, dirSymbol, frontFieldCollisionPos, 0);
+}
+
+// [YOUR CODE WILL BE PLACED HERE]
+class CustomController : public ISnakeController
+{
+public:
+    explicit CustomController() : _final_angle{0}, _turnDirection{DirectionType::kRight}, _currentDirType{DirectionType::kForward}, _dirSymbol{AngleToSymbol(_final_angle)} {}
+    DirectionType NextDirection(const Game &, size_t) override;
+
+private:
+    enum class DirectionSymbol
+    {
+        RIGHT,
+        DOWN,
+        LEFT,
+        UP,
+        NONE
+    };
+    DirectionType _turnDirection;
+    DirectionType _currentDirType;
+    float _final_angle;
+    DirectionSymbol _dirSymbol;
+    float turn_radius = 3 * 180 / 3.1415926 + 27;
+    // float no_other_snake_adder = 0;
+    int count = 0;
+
+    DirectionSymbol AngleToSymbol(float);
+    float GetCollisionDistance(Position, DirectionSymbol, const Game &, size_t);
+    float GetFrontCollisionDistance(Position, float, DirectionSymbol, Position, float);
+    float FrontWallDistance(Position, DirectionSymbol, float, float);
+};
+
+DirectionType CustomController::NextDirection(const Game &game, size_t id)
+{
+    const auto &snake = game.Snakes().at(id);
+    // if is turning around
+    // keep turning
+    if (_currentDirType != DirectionType::kForward)
+    {
+        float remaining_angle = abs(_final_angle - snake.Direction());
+        if (remaining_angle > 0)
+        { // still turning
+            return _currentDirType;
+        }
+        // finished turning
+        _dirSymbol = AngleToSymbol(snake.Direction());
+    }
+
+    float distance = GetCollisionDistance(snake.Head(), _dirSymbol, game, id);
+
+    // if 0 < distance < min_distance
+    if (distance > 0 && distance < turn_radius)
+    {
+        if (game.Snakes().size() == 1)
+        {
+            ++count;
+            count %= 3;
+            if (count == 0)
+            {
+                turn_radius += 100;
+            }
+        }
+        // start turning around
+        _currentDirType = _turnDirection;
+        if (_currentDirType == DirectionType::kRight)
+        {
+            _final_angle = snake.Direction() + 90;
+        }
+        else
+        {
+            _final_angle = snake.Direction() - 90;
         }
     }
     else
@@ -812,185 +890,204 @@ float CustomController::FrontWallDistance(Position snakeHead, DirectionSymbol di
 }
 // [YOUR CODE WILL BE PLACED HERE]
 
-Position CreateSafePosition(const Game& game, std::mt19937& rand, size_t margin) {
+Position CreateSafePosition(const Game &game, std::mt19937 &rand, size_t margin)
+{
     const auto space = Game::kSnakeRadius * margin;
-    return
-        Position{
-                static_cast<float>(rand() % (game.FieldWidth() - 2 * space) + space),
-                static_cast<float>(rand() % (game.FieldHeight() - 2 * space) + space),
-        };
+    return Position{
+        static_cast<float>(rand() % (game.FieldWidth() - 2 * space) + space),
+        static_cast<float>(rand() % (game.FieldHeight() - 2 * space) + space),
+    };
 }
 
-int CreateValidLeftTime(std::mt19937& rand) {
-    return
-        static_cast<int>(
-                rand() % (Game::kMaxLeftTime - Game::kMinLeftTime+1) + Game::kMinLeftTime);
+int CreateValidLeftTime(std::mt19937 &rand)
+{
+    return static_cast<int>(
+        rand() % (Game::kMaxLeftTime - Game::kMinLeftTime + 1) + Game::kMinLeftTime);
 }
 
-Food CreateFood(const Game& game, std::mt19937& rand) {
+Food CreateFood(const Game &game, std::mt19937 &rand)
+{
     auto pos = CreateSafePosition(game, rand, 2);
     auto leftTime = CreateValidLeftTime(rand);
     return {pos, leftTime};
 }
-Position CreateSafeSnakePosition(const Game& game, std::mt19937& rand) {
+
+Position CreateSafeSnakePosition(const Game &game, std::mt19937 &rand)
+{
     return CreateSafePosition(game, rand, 5);
 }
 
-void TestA1(); 
+void TestA1();
 void TestA2();
 
 void TestB1();
 void TestB2();
 
 void TestC1();
-void TestC2(); 
+void TestC2();
 
-int main() {
+int main()
+{
     int id;
     std::cin >> id;
-    void (*f[])() = { TestA1, TestA2, TestB1, TestB2, TestC1, TestC2 };
-    f[id-1]();
+    void (*f[])() = {TestA1, TestA2, TestB1, TestB2, TestC1, TestC2};
+    f[id - 1]();
 }
-void RunTest(std::function<Game(std::shared_ptr<ISnakeController>)> setup) {
+
+void RunTest(std::function<Game(std::shared_ptr<ISnakeController>)> setup)
+{
     Game game = setup(std::make_shared<CustomController>());
     game.RunUntilTheEnd();
     std::cout << "Scores: " << game.Scores() << std::endl;
 }
 
-void TestA(unsigned seed) {
+void TestA(unsigned seed)
+{
     RunTest(
-            [&](const std::shared_ptr<ISnakeController> &controller) {
-                Game game(25, 25, Game::kMaxLeftTime);
+        [&](const std::shared_ptr<ISnakeController> &controller)
+        {
+            Game game(25, 25, Game::kMaxLeftTime);
 
-                std::mt19937 rand{seed};
+            std::mt19937 rand{seed};
 
-                for (int i = 1; i <= 500; ++i) {
-                    game.AddFood(CreateFood(game, rand));
-                }
+            for (int i = 1; i <= 500; ++i)
+            {
+                game.AddFood(CreateFood(game, rand));
+            }
 
-                game.AddSnake(1, CreateSafeSnakePosition(game, rand), 0, 10);
-                game.AddController(1, controller);
-                return game;
-            });
-}
-void TestB(unsigned seed) {
-    RunTest(
-            [&](const std::shared_ptr<ISnakeController> &controller) {
-		 		Game game(25, 25, Game::kMaxLeftTime); 
-		        std::mt19937 rand{seed};
-		        
-		        const auto margin = Game::kSnakeRadius * 5;
-		        float max_x = game.FieldWidth() - margin;
-		        float max_y = game.FieldHeight() - margin;
-		        float min_x = 0 + margin;
-		        float min_y = 0 + margin;
-		        float center_x = 0 + game.FieldWidth() / 2;
-		        float center_y = 0 + game.FieldHeight() / 2;
-		        Position pos{0, 0};
-		
-		        for (int i = 1; i <= 500; ++i) {
-		            game.AddFood(CreateFood(game, rand));
-		        }
-		
-		        game.AddSnake(1, CreateSafeSnakePosition(game, rand), 0, 10);
-		        game.AddController(1, controller);
-		
-				pos.x = min_x + 100;
-		        pos.y = min_y + 100;
-		        game.AddSnake(2, pos, 0, 15);
-		        game.AddController(
-			        2,
-			        std::make_shared<ConstantDirectionControllerB>());
-                
-                pos.x = min_x + 200;
-		        pos.y = max_y;
-		        game.AddSnake(3, pos, 0, 15);
-		        game.AddController(
-			        3,
-			        std::make_shared<ConstantDirectionControllerA>(DirectionType::kLeft));
-		
-				pos.x = max_x - 150;
-		        pos.y = min_y + 150;
-		        game.AddSnake(4, pos, 0, 10);
-		        game.AddController(
-			        4,
-			        std::make_shared<ConstantDirectionControllerA>(DirectionType::kRight));
-		
-				pos.x = max_x;
-		        pos.y = max_y;
-		        game.AddSnake(5, pos, 0, 15);
-		        game.AddController(
-			        5,
-			        std::make_shared<ConstantDirectionControllerA>(DirectionType::kLeft));
-		
-				pos.x = center_x;
-		        pos.y = center_y;
-		        game.AddSnake(6, pos, 0, 25);
-		        game.AddController(
-			        6,
-			        std::make_shared<ConstantDirectionControllerB>());
-		
-		        return game;
-            });
+            game.AddSnake(1, CreateSafeSnakePosition(game, rand), 0, 10);
+            //std::cout << game.FieldWidth() << ", " << game.FieldHeight() << std::endl;
+            //std::cout << game.Snakes().at(1).Head().x << ", " << game.Snakes().at(1).Head().y << std::endl;
+            game.AddController(1, controller);
+            return game;
+        });
 }
 
-void TestC(unsigned seed) {
+void TestB(unsigned seed)
+{
     RunTest(
-            [&](const std::shared_ptr<ISnakeController> &controller) {
-		 		Game game(25, 25, Game::kMaxLeftTime);
-		        std::mt19937 rand{ seed };
-		
-		        for (int i = 1; i <= 500; ++i) {
-		            game.AddFood(CreateFood(game, rand));
-		        }
-		
-		        game.AddSnake(1, CreateSafeSnakePosition(game, rand), 0, 10);
-		        game.AddController(1, controller);
-		
-		        const auto margin = Game::kSnakeRadius * 7;
-		        float max_x = game.FieldWidth() - margin;
-		        float max_y = game.FieldHeight() - margin;
-		        float min_x = 0 + margin;
-		        float min_y = 0 + margin;
-		
-		        Position pos{ 0, 0 };
-		        // Top Left - Go right
-		        pos.x = min_x + (rand() % 8) * 50; // random shift right
-		        pos.y = min_y;
-		
-        		game.AddSnake(2, pos, 0, 15);
-		        game.AddController(
-		            2,
-		            std::make_shared<StraightForwardController>(0, DirectionType::kLeft));
-		
-		        // Bottom Left - Go up
-		        pos.x = min_x;
-		        pos.y = max_y - (rand() % 5) * 50; // random shift up
-		
-		        game.AddSnake(3, pos, 270, 15);
-		        game.AddController(
-		            3,
-		            std::make_shared<StraightForwardController>(270, DirectionType::kRight));
-		
-		        // Bottom Right - Go left
-		        pos.x = max_x - (rand() % 9) * 30; // random shift left
-		        pos.y = max_y;
-		
-		        game.AddSnake(4, pos, 180, 15);
-		        game.AddController(
-		            4,
-		            std::make_shared<StraightForwardController>(180, DirectionType::kLeft));
-                    		        // Top Right - Go down
-		        pos.x = max_x;
-		        pos.y = min_y + (rand() % 4) * 60; // random shift down
-		
-		        game.AddSnake(5, pos, 90, 15);
-		        game.AddController(
-		            5,
-		            std::make_shared<StraightForwardController>(90, DirectionType::kRight));
-		
-		        return game;
-            });
+        [&](const std::shared_ptr<ISnakeController> &controller)
+        {
+            Game game(25, 25, Game::kMaxLeftTime);
+            std::mt19937 rand{seed};
+
+            const auto margin = Game::kSnakeRadius * 5;
+            float max_x = game.FieldWidth() - margin;
+            float max_y = game.FieldHeight() - margin;
+            float min_x = 0 + margin;
+            float min_y = 0 + margin;
+            float center_x = 0 + game.FieldWidth() / 2;
+            float center_y = 0 + game.FieldHeight() / 2;
+            Position pos{0, 0};
+
+            for (int i = 1; i <= 500; ++i)
+            {
+                game.AddFood(CreateFood(game, rand));
+            }
+
+            game.AddSnake(1, CreateSafeSnakePosition(game, rand), 0, 10);
+            game.AddController(1, controller);
+
+            pos.x = min_x + 100;
+            pos.y = min_y + 100;
+            game.AddSnake(2, pos, 0, 15);
+            game.AddController(
+                2,
+                std::make_shared<ConstantDirectionControllerB>());
+
+            pos.x = min_x + 200;
+            pos.y = max_y;
+            game.AddSnake(3, pos, 0, 15);
+            game.AddController(
+                3,
+                std::make_shared<ConstantDirectionControllerA>(DirectionType::kLeft));
+
+            pos.x = max_x - 150;
+            pos.y = min_y + 150;
+            game.AddSnake(4, pos, 0, 10);
+            game.AddController(
+                4,
+                std::make_shared<ConstantDirectionControllerA>(DirectionType::kRight));
+
+            pos.x = max_x;
+            pos.y = max_y;
+            game.AddSnake(5, pos, 0, 15);
+            game.AddController(
+                5,
+                std::make_shared<ConstantDirectionControllerA>(DirectionType::kLeft));
+
+            pos.x = center_x;
+            pos.y = center_y;
+            game.AddSnake(6, pos, 0, 25);
+            game.AddController(
+                6,
+                std::make_shared<ConstantDirectionControllerB>());
+
+            return game;
+        });
+}
+
+void TestC(unsigned seed)
+{
+    RunTest(
+        [&](const std::shared_ptr<ISnakeController> &controller)
+        {
+            Game game(25, 25, Game::kMaxLeftTime);
+            std::mt19937 rand{seed};
+
+            for (int i = 1; i <= 500; ++i)
+            {
+                game.AddFood(CreateFood(game, rand));
+            }
+
+            game.AddSnake(1, CreateSafeSnakePosition(game, rand), 0, 10);
+            game.AddController(1, controller);
+
+            const auto margin = Game::kSnakeRadius * 7;
+            float max_x = game.FieldWidth() - margin;
+            float max_y = game.FieldHeight() - margin;
+            float min_x = 0 + margin;
+            float min_y = 0 + margin;
+
+            Position pos{0, 0};
+            // Top Left - Go right
+            pos.x = min_x + (rand() % 8) * 50; // random shift right
+            pos.y = min_y;
+
+            game.AddSnake(2, pos, 0, 15);
+            game.AddController(
+                2,
+                std::make_shared<StraightForwardController>(0, DirectionType::kLeft));
+
+            // Bottom Left - Go up
+            pos.x = min_x;
+            pos.y = max_y - (rand() % 5) * 50; // random shift up
+
+            game.AddSnake(3, pos, 270, 15);
+            game.AddController(
+                3,
+                std::make_shared<StraightForwardController>(270, DirectionType::kRight));
+
+            // Bottom Right - Go left
+            pos.x = max_x - (rand() % 9) * 30; // random shift left
+            pos.y = max_y;
+
+            game.AddSnake(4, pos, 180, 15);
+            game.AddController(
+                4,
+                std::make_shared<StraightForwardController>(180, DirectionType::kLeft));
+
+            // Top Right - Go down
+            pos.x = max_x;
+            pos.y = min_y + (rand() % 4) * 60; // random shift down
+
+            game.AddSnake(5, pos, 90, 15);
+            game.AddController(
+                5,
+                std::make_shared<StraightForwardController>(90, DirectionType::kRight));
+
+            return game;
+        });
 }
 
 void TestA1() { TestA(20); }
@@ -1001,4 +1098,3 @@ void TestB2() { TestB(/* HIDDEN */ 25); }
 
 void TestC1() { TestC(25); }
 void TestC2() { TestC(/* HIDDEN */ 25); }
-
